@@ -137,3 +137,6 @@ if __name__ == "__main__":
     # Asegurarse de que existe el directorio static
     os.makedirs('static', exist_ok=True)
     app.run(debug=True)
+
+# Asegúrate de que esto esté al final del archivo
+app = app
