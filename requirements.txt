@@ -1,0 +1,6 @@
+flask==3.0.3
+pandas
+requests
+matplotlib
+python-dotenv
+gunicorn

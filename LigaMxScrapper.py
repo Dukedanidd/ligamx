@@ -119,19 +119,31 @@ def index():
             escape=False
         )
         
-        # Modificar el HTML para agregar las clases de posición a las filas
-        tabla_html = tabla_html.replace('<tr>', lambda x: '<tr class="{}">'.format(
-            'libertadores' if df.iloc[len(df.index) - 1]['Posición'] <= 4
-            else 'liguilla' if df.iloc[len(df.index) - 1]['Posición'] <= 12
-            else 'descenso'
-        ))
+        # Modificar las filas una por una
+        rows = tabla_html.split('<tr>')
+        new_rows = []
+        for i, row in enumerate(rows):
+            if i == 0:  # Encabezado
+                new_rows.append(row)
+                continue
+            
+            if i <= len(df):  # Filas de datos
+                posicion = df.iloc[i-1]['Posición']
+                clase = 'libertadores' if posicion <= 4 else 'liguilla' if posicion <= 12 else 'descenso'
+                new_rows.append(f'<tr class="{clase}">{row}')
+            else:
+                new_rows.append(f'<tr>{row}')
+        
+        tabla_html = ''.join(new_rows)
         
         # Aplicar formato personalizado a las celdas
         tabla_html = tabla_html.replace('<td>', '<td class="text-center">')
+        
+        # Modificar la columna del equipo
         tabla_html = tabla_html.replace(
             '<td class="text-center">',
-            lambda x: '<td class="team-name text-start">',
-            1  # Solo reemplazar la primera ocurrencia (columna Equipo)
+            '<td class="team-name text-start">',
+            1
         )
         
         return render_template('index.html', tabla=tabla_html)
