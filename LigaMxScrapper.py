@@ -6,12 +6,6 @@ import schedule
 import matplotlib.pyplot as plt
 import os
 from dotenv import load_dotenv
-import logging
-import sys
-
-# Configurar logging
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
@@ -86,82 +80,76 @@ def fetch_standings():
         print(f"Error: {e}")
         return None
 
-@app.route('/api/chart-data')
-def get_chart_data():
+# Funcion para crear un grafico de la tabla de posiciones
+def create_graph(df):
+    """Crea un gráfico de barras de los puntos de cada equipo."""
     try:
-        df = fetch_standings()
-        if df is not None:
-            df_sorted = df.sort_values(by="Posición")
-            return jsonify({
-                'labels': df_sorted["Equipo"].tolist(),
-                'data': df_sorted["Puntos"].tolist()
-            })
-        return jsonify({"error": "No se pudieron obtener los datos"}), 500
+        df_sorted = df.sort_values(by="Posición")
+        equipos = df_sorted["Equipo"]
+        puntos = df_sorted["Puntos"]
+        
+        # Creamos el grafico
+        plt.figure(figsize=(10, 6))
+        plt.bar(equipos, puntos, color='skyblue')
+        plt.xticks(rotation=45, ha='right')
+        plt.xlabel("Equipos")
+        plt.ylabel("Puntos")
+        plt.title("Tabla de posiciones - Liga MX")
+        plt.tight_layout()
+        
+        # Guardamos en static para que Flask pueda servirlo
+        plt.savefig("static/liga_mx_standings_graph.png")
+        plt.close()  # Importante cerrar la figura
+        
     except Exception as e:
-        logger.error(f"Error en chart-data: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        print(f"Error al generar el gráfico: {e}")
 
 @app.route('/')
 def index():
-    try:
-        df = fetch_standings()
-        if df is not None:
-            # Convertir DataFrame a HTML con clases personalizadas
-            tabla_html = df.to_html(
-                classes='table table-hover table-striped',
-                index=False,
-                table_id='standings-table',
-                escape=False
-            )
+    df = fetch_standings()
+    if df is not None:
+        # Crear el gráfico
+        create_graph(df)
+        
+        # Convertir DataFrame a HTML con clases personalizadas
+        tabla_html = df.to_html(
+            classes='table table-hover table-striped',
+            index=False,
+            table_id='standings-table',
+            escape=False
+        )
+        
+        # Modificar las filas una por una
+        rows = tabla_html.split('<tr>')
+        new_rows = []
+        for i, row in enumerate(rows):
+            if i == 0:  # Encabezado
+                new_rows.append(row)
+                continue
             
-            # Modificar las filas una por una
-            rows = tabla_html.split('<tr>')
-            new_rows = []
-            for i, row in enumerate(rows):
-                if i == 0:  # Encabezado
-                    new_rows.append(row)
-                    continue
-                
-                if i <= len(df):  # Filas de datos
-                    posicion = df.iloc[i-1]['Posición']
-                    clase = 'libertadores' if posicion <= 4 else 'liguilla' if posicion <= 12 else 'descenso'
-                    new_rows.append(f'<tr class="{clase}">{row}')
-                else:
-                    new_rows.append(f'<tr>{row}')
-            
-            tabla_html = ''.join(new_rows)
-            
-            # Aplicar formato personalizado a las celdas
-            tabla_html = tabla_html.replace('<td>', '<td class="text-center">')
-            
-            # Modificar la columna del equipo
-            tabla_html = tabla_html.replace(
-                '<td class="text-center">',
-                '<td class="team-name text-start">',
-                1
-            )
-            
-            return render_template('index.html', tabla=tabla_html)
-        return "Error al obtener los datos", 500
-    except Exception as e:
-        logger.error(f"Error en index: {str(e)}")
-        return f"Error del servidor: {str(e)}", 500
-
-# Manejador de errores 500
-@app.errorhandler(500)
-def internal_error(error):
-    logger.error(f"Error 500: {str(error)}")
-    return "Error interno del servidor", 500
-
-# Manejador de errores 404
-@app.errorhandler(404)
-def not_found_error(error):
-    return "Página no encontrada", 404
+            if i <= len(df):  # Filas de datos
+                posicion = df.iloc[i-1]['Posición']
+                clase = 'libertadores' if posicion <= 4 else 'liguilla' if posicion <= 12 else 'descenso'
+                new_rows.append(f'<tr class="{clase}">{row}')
+            else:
+                new_rows.append(f'<tr>{row}')
+        
+        tabla_html = ''.join(new_rows)
+        
+        # Aplicar formato personalizado a las celdas
+        tabla_html = tabla_html.replace('<td>', '<td class="text-center">')
+        
+        # Modificar la columna del equipo
+        tabla_html = tabla_html.replace(
+            '<td class="text-center">',
+            '<td class="team-name text-start">',
+            1
+        )
+        
+        return render_template('index.html', tabla=tabla_html)
+    return "Error al obtener los datos"
 
 if __name__ == "__main__":
     # Asegurarse de que existe el directorio static
     os.makedirs('static', exist_ok=True)
     app.run(debug=True)
-
-# Para Vercel
-app = app
