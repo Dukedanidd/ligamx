@@ -1,6 +1,7 @@
 flask==3.0.3
-pandas
-requests
-matplotlib
-python-dotenv
+pandas==2.2.0
+requests==2.31.0
+matplotlib==3.8.2
+python-dotenv==1.0.0
+numpy==1.26.3
 gunicorn

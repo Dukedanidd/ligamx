@@ -29,4 +29,42 @@ document.addEventListener('DOMContentLoaded', function() {
             // según la temporada seleccionada
         });
     }
+
+    // Crear el gráfico
+    fetch('/api/chart-data')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('standings-chart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Puntos',
+                        data: data.data,
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Puntos por Equipo'
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => console.error('Error:', error));
 }); 

@@ -80,37 +80,21 @@ def fetch_standings():
         print(f"Error: {e}")
         return None
 
-# Funcion para crear un grafico de la tabla de posiciones
-def create_graph(df):
-    """Crea un gráfico de barras de los puntos de cada equipo."""
-    try:
+@app.route('/api/chart-data')
+def get_chart_data():
+    df = fetch_standings()
+    if df is not None:
         df_sorted = df.sort_values(by="Posición")
-        equipos = df_sorted["Equipo"]
-        puntos = df_sorted["Puntos"]
-        
-        # Creamos el grafico
-        plt.figure(figsize=(10, 6))
-        plt.bar(equipos, puntos, color='skyblue')
-        plt.xticks(rotation=45, ha='right')
-        plt.xlabel("Equipos")
-        plt.ylabel("Puntos")
-        plt.title("Tabla de posiciones - Liga MX")
-        plt.tight_layout()
-        
-        # Guardamos en static para que Flask pueda servirlo
-        plt.savefig("static/liga_mx_standings_graph.png")
-        plt.close()  # Importante cerrar la figura
-        
-    except Exception as e:
-        print(f"Error al generar el gráfico: {e}")
+        return {
+            'labels': df_sorted["Equipo"].tolist(),
+            'data': df_sorted["Puntos"].tolist()
+        }
+    return {"error": "No se pudieron obtener los datos"}
 
 @app.route('/')
 def index():
     df = fetch_standings()
     if df is not None:
-        # Crear el gráfico
-        create_graph(df)
-        
         # Convertir DataFrame a HTML con clases personalizadas
         tabla_html = df.to_html(
             classes='table table-hover table-striped',
